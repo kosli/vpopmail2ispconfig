@@ -49,9 +49,14 @@ try {
                 $manuallyCheck[] = sprintf("sieve filter: %s", $file);
               }elseif(preg_match("/^&(.*)/", $buffer, $matches)) {
                 // Mail forward
-                $source = sprintf("%s@%s", $user['pw_name'], $domain);
-                $destination = $matches[1];
-                addMailForward($client_id, $source, $destination, true);
+                if($user['pw_name'] == 'postmaster') {
+                  // Special handling of postmaster forwards
+                  $manuallyCheck[] = sprintf("user has forward on %s@%s", $user['pw_name'], $domain);
+                }else{
+                  $source = sprintf("%s@%s", $user['pw_name'], $domain);
+                  $destination = $matches[1];
+                  addMailForward($client_id, $source, $destination, true);
+                }
               }else{
                 // unknown
                 printf("unknown (%s): %s\n", __LINE__. $buffer);
