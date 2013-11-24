@@ -59,7 +59,7 @@ try {
                 }
               }else{
                 // unknown
-                printf("unknown (%s): %s\n", __LINE__. $buffer);
+                printf("unknown (%s): %s\n", __LINE__, $buffer);
                 exit;
               }
             }
@@ -88,7 +88,7 @@ try {
               addMailCatchAll($client_id, $domain, $destination, true);
             }else{
               // unknown
-              printf("unknown (%s): %s\n", __LINE__. $buffer);
+              printf("unknown (%s): %s\n", __LINE__, $buffer);
               // echo $regex;
               exit;
             }
@@ -116,7 +116,7 @@ try {
                             addMailForward($client_id, $source, $destination, true);
                         }else{
                             echo "  $user";
-                            printf("\n  unknown (%s): %s\n", __LINE__. $buffer);
+                            printf("\n  unknown (%s): %s\n", __LINE__, $buffer);
                             exit;
                         }
                       }
