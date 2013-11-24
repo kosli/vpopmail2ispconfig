@@ -1,0 +1,14 @@
+<?php
+$mysql_hostname = 'localhost';
+$mysql_username = 'vpopmail';
+$mysql_password = 'xxx';
+$mysql_database = 'vpopmail';
+
+$soap_username = 'ispconfig';
+$soap_password = 'xxxx';
+$soap_location = 'https://ispconfig.example.com/remote/index.php';
+$soap_uri      = 'https://ispconfig.example.com/remote/';
+
+$vpopmailDir = "/home/vpopmail/";
+
+?>
