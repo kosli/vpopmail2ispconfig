@@ -2,8 +2,6 @@
 <?php
 require('init.php');
 
-// Migrates the domains & users from vpopmail server "homer" to ispconfig server "otto"
-
 try {
 // **** Start Migration
     echo "Starting migration... \n";
@@ -14,7 +12,7 @@ try {
     foreach($domains_otto as $domain=>$user) {
 
       // only specific domain
-      #if($domain != "example.com") continue;
+      if(isset($onlyOneDomain) and $domain != $onlyOneDomain) continue;
 
       if(array_key_exists($domain, $domains_homer)) {
         $i++;
@@ -45,14 +43,18 @@ try {
                 // Filter active
                 echo "  Sieve filter is active\n";
                 $manuallyCheck[] = sprintf("sieve filter: %s", $file);
+              }elseif($buffer == "| /var/qmail/bin/preline -f /usr/lib/dovecot/deliver -d " . $user['pw_name'] . "@" . $domain ."\n") {
+                // Filter active
+                echo "  Sieve filter is active\n";
+                $manuallyCheck[] = sprintf("sieve filter: %s", $file);
               }elseif(preg_match("/^&(.*)/", $buffer, $matches)) {
-                  $source = sprintf("%s@%s", $user['pw_name'], $domain);
-                  $destination = $matches[1];
-                  addMailForward($client_id, $source, $destination, true);
+                // Mail forward
+                $source = sprintf("%s@%s", $user['pw_name'], $domain);
+                $destination = $matches[1];
+                addMailForward($client_id, $source, $destination, true);
               }else{
                 // unknown
-                echo "unknown: " . $buffer . "\n";
-                echo $regex;
+                printf("unknown (%s): %s\n", __LINE__. $buffer);
                 exit;
               }
             }
@@ -81,8 +83,8 @@ try {
               addMailCatchAll($client_id, $domain, $destination, true);
             }else{
               // unknown
-              echo "unknown: " . $buffer . "\n";
-              echo $regex;
+              printf("unknown (%s): %s\n", __LINE__. $buffer);
+              // echo $regex;
               exit;
             }
           }
@@ -109,7 +111,7 @@ try {
                             addMailForward($client_id, $source, $destination, true);
                         }else{
                             echo "  $user";
-                            echo "\n  unknown: " . $buffer . "\n";
+                            printf("\n  unknown (%s): %s\n", __LINE__. $buffer);
                             exit;
                         }
                       }

@@ -1,4 +1,10 @@
 <?php
+if (!isset($_SERVER['argc'])) {
+ echo "You have to run this script from commandline";
+ echo "Bye.";
+ exit;
+}
+
 require('config.php');
 require('functions.php');
 
@@ -66,4 +72,7 @@ try {
    echo 'SOAP Error: '.$e->getMessage();
 }
 
+if (isset($argv[1])) {
+  $onlyOneDomain = $argv[1];
+}
 ?>
