@@ -41,7 +41,7 @@ function getDomainsFromOtto() {
   ksort($domains_otto);
 }
 
-function addMailDomain($client_id, $domain, $delete = false) {
+function addMailDomain($client_id, $domain, $delete = false, $ident = false) {
   global $server_id, $mysoap, $session_id, $count;
   
   $id = false;
@@ -49,6 +49,12 @@ function addMailDomain($client_id, $domain, $delete = false) {
                    'active' => 'Y',
                    'server_id' => $server_id,
                   );
+
+  if($ident) {
+    echo "  ";                  
+  }else{
+    echo "\n";
+  }
   printf("Add domain %-30s: ", strtoupper($domain));
 
   $result = $mysoap->mail_domain_get_by_domain($session_id, $domain);
@@ -163,7 +169,7 @@ function addMailDomainAlias($client_id, $source, $destination, $delete = false) 
                       'active' => 'y',
                      );
 
-  printf(" add alias %s => %s : ", strtoupper($source), strtoupper($destination));
+  printf("  Add alias  %s => %s : ", strtoupper($source), strtoupper($destination));
 
   $result = $mysoap->mail_aliasdomain_get($session_id, $params_get);
 

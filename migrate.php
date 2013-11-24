@@ -22,7 +22,7 @@ try {
         if(is_array($domains_homer[$domain])) {
           foreach($domains_homer[$domain] as $key => $aliasdomain) {
             printf(" Add alias domains\n");
-            addMailDomain($client_id, $aliasdomain, true);
+            addMailDomain($client_id, $aliasdomain, true, true);
             addMailDomainAlias($client_id, $aliasdomain, $domain, true);
           }
         }else{
