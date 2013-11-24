@@ -28,6 +28,10 @@ $con = mysqli_connect($mysql_hostname, $mysql_username, $mysql_password, $mysql_
 if (mysqli_connect_errno($con)) {
   echo "Failed to connect to MySQL: " . mysqli_connect_error();
 }
+
+if (!$con->set_charset("utf8")) {
+    printf("Error loading character set utf8: %s\n", $con->error);
+}
  
  
 // Create SOAP Connection
