@@ -138,7 +138,11 @@ try {
         printf("Domain not found  %-30s \n", strtoupper($domain));
         $manuallyCheck[] = sprintf("domain not found: %s", $domain);
       }
-      if($i == 5) break;
+      
+      if(isset($stopDomainCount) and $i == $stopDomainCount) {
+        printf("Migration aborted after %s domains", $i);
+        break;
+      }
     }
 
     echo "\nMigration finished:\n\n";

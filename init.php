@@ -76,7 +76,11 @@ try {
    echo 'SOAP Error: '.$e->getMessage();
 }
 
-if (isset($argv[1])) {
-  $onlyOneDomain = $argv[1];
+if(isset($argv[1])) {
+  if(is_numeric($argv[1])) {
+    $stopDomainCount = $argv[1];
+  }else{
+    $onlyOneDomain = $argv[1];
+  }
 }
 ?>
