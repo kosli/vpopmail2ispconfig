@@ -23,6 +23,17 @@ function getDomainsFromHomer() {
     // error opening the file.
   }
   ksort($domains_homer);
+
+  $dir = "/home/vpopmail/domains/";
+  if ($dirhandle = opendir($dir)) {
+     while (false !== ($entry = readdir($dirhandle))) {
+       if(is_dir($dir . $entry) and !array_key_exists($entry, $domains_homer) and $entry != '.' and $entry !='..') {
+//         echo "Directory for non-existent domain found: " . $entry . "\n";
+//         die();
+       }
+    }
+    closedir($dirhandle);
+  }
 }
 
 

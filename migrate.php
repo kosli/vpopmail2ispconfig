@@ -2,15 +2,20 @@
 <?php
 require('init.php');
 
+$domains_homer_all = $domains_homer;
+
+// print_r($domains_homer);
+// die;
+
 try {
 // **** Start Migration
     echo "Starting migration... \n";
 
     $dotqmailfiles = array();
+    $migrateddomains = array();
     $i = 0;
     
     foreach($domains_otto as $domain=>$user) {
-
       // only specific domain
       if(isset($onlyOneDomain) and $domain != $onlyOneDomain) continue;
 
@@ -24,6 +29,7 @@ try {
             printf(" Add alias domains\n");
             addMailDomain($client_id, $aliasdomain, true, true);
             addMailDomainAlias($client_id, $aliasdomain, $domain, true);
+            $migrateddomains[] = $aliasdomain;
           }
         }else{
           printf(" No alias domains\n");
@@ -42,16 +48,16 @@ try {
               if($buffer == "| /var/qmail/bin/preline -f /usr/lib/dovecot/deliver -d \$EXT@\$USER\n") {
                 // Filter active
                 echo "  Sieve filter is active\n";
-                $manuallyCheck[] = sprintf("sieve filter: %s", $file);
+                $manuallyCheck[$file] = 'sieve filter'; // sprintf("sieve filter: %s", $file);
               }elseif($buffer == "| /var/qmail/bin/preline -f /usr/lib/dovecot/deliver -d " . $user['pw_name'] . "@" . $domain ."\n") {
                 // Filter active
                 echo "  Sieve filter is active\n";
-                $manuallyCheck[] = sprintf("sieve filter: %s", $file);
+                $manuallyCheck[$file] = 'sieve filter';
               }elseif(preg_match("/^&(.*)/", $buffer, $matches)) {
                 // Mail forward
                 if($user['pw_name'] == 'postmaster') {
                   // Special handling of postmaster forwards
-                  $manuallyCheck[] = sprintf("user has forward on %s@%s", $user['pw_name'], $domain);
+                  $manuallyCheck[$user['pw_Name'] . "@" . $domain] = 'user has forward';
                 }else{
                   $source = sprintf("%s@%s", $user['pw_name'], $domain);
                   $destination = $matches[1];
@@ -86,6 +92,9 @@ try {
               // print_r($matches);
               $destination = $matches[1] . "@" . $domain;
               addMailCatchAll($client_id, $domain, $destination, true);
+            }elseif(preg_match("/^\| \/home\/vpopmail\/bin\/vdelivermail '' (.*)/", $buffer, $matches)) {
+              // catch all
+              addMailCatchAll($client_id, $domain, $matches[1], true);
             }else{
               // unknown
               printf("unknown (%s): %s\n", __LINE__, $buffer);
@@ -102,8 +111,13 @@ try {
 	// check all other .qmail
         if ($dirhandle = opendir($vpopmailDir . "domains/" . $domain)) {
             while (false !== ($entry = readdir($dirhandle))) {
-		if (preg_match("/^\.qmail-(.*)/", $entry, $matches)) {
-		  $file = $vpopmailDir . "domains/"  . $domain . "/" . $entry;
+                $file = $vpopmailDir . "domains/"  . $domain . "/" . $entry;
+		if (preg_match("/^\.qmail-(.*)-(accept-default|owner|reject-default|return-default)/", $entry, $matches)) {
+                  $listdir = $vpopmailDir . "domains/"  . $domain . "/" . $matches[1];
+                  $manuallyCheck[$listdir] = 'mailing list';
+                }elseif (preg_match("/^\.qmail-(.*)-default/", $entry, $matches)) {
+                  // echo "DEFAULT: $file \n";
+		}elseif (preg_match("/^\.qmail-(.*)/", $entry, $matches)) {
 		  if(!in_array($file, $dotqmailfiles)) {
 		    $user = $matches[1];
                     $dotqmailfiles[] = $file;
@@ -111,11 +125,16 @@ try {
                     if ($handle) {
                       while (($buffer = fgets($handle, 4096)) !== false) {
                         if(preg_match("/^&(.*)/", $buffer, $matches)) {
-                            $source = sprintf("%s@%s", $user, $domain);
+                            $source = sprintf("%s@%s", strtr($user, ':', '.'), $domain);
                             $destination = $matches[1];
                             addMailForward($client_id, $source, $destination, true);
+                        }elseif(preg_match("/^\|\/usr\/local\/bin\/ezmlm\/(.*)/", $buffer, $matches)) {
+                          if(!preg_match("/^(.*)-default/", $user, $matches)) {
+                            $listdir = $vpopmailDir . "domains/"  . $domain . "/" . $user;
+                            $manuallyCheck[$listdir] = 'mailing list';
+                          }
                         }else{
-                            echo "  $user";
+                            echo "  $user in file $file";
                             printf("\n  unknown (%s): %s\n", __LINE__, $buffer);
                             exit;
                         }
@@ -133,10 +152,20 @@ try {
         }
 
         unset($domains_homer[$domain]);
-        
+        $migrateddomains[] = $domain;
       }else{
-        printf("Domain not found  %-30s \n", strtoupper($domain));
-        $manuallyCheck[] = sprintf("domain not found: %s", $domain);
+        // Check if the domain is an alias domain
+        $tFound = false;
+        foreach ($domains_homer_all as $tDomain=>$tList) {
+          if(is_array($tList) and in_array($domain, $tList)) {
+            $tFound = true;
+          }
+        }
+        
+        if($tFound == false) {
+          printf("Domain not found  %-30s \n", strtoupper($domain));
+          $manuallyCheck[$domain] = 'domain not found';
+        }
       }
       
       if(isset($stopDomainCount) and $i == $stopDomainCount) {
@@ -146,12 +175,24 @@ try {
     }
 
     echo "\nMigration finished:\n\n";
-        
-    print_r($count);
-    print_r($manuallyCheck);
 
-#    echo "DOMAINS NOT FOUND on otto\n";
-#    print_r($domains_homer);
+    echo "Counts:\n";
+    foreach($count as $key=>$value) {
+      printf(" %-12s: %s\n", $key, $value);         
+    }
+    
+    echo "\ncheck manually:\n";
+    foreach($manuallyCheck as $key=>$value) {
+      printf("%s:%s\n", $value, $key);
+    }
+    
+    echo "\nmigrated domains:\n";
+    foreach($migrateddomains as $domain) {
+      printf(" %s\n", $domain);
+    }
+    
+    echo "DOMAINS NOT FOUND on otto\n";
+    print_r($domains_homer);
 
 //*** LOGOUT
     if($mysoap->logout($session_id)) {
